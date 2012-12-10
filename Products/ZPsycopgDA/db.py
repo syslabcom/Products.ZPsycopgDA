@@ -30,6 +30,9 @@ from psycopg2.extensions import INTEGER, LONGINTEGER, FLOAT, BOOLEAN, DATE, TIME
 from psycopg2.extensions import TransactionRollbackError, register_type
 from psycopg2 import NUMBER, STRING, ROWID, DATETIME 
 
+import logging
+logger = logging.getLogger('ZPsycopgDA')
+
 
 # the DB object, managing all the real query work
 
@@ -171,15 +174,15 @@ class DB(TM, dbi_db.DB):
                         c.execute(qs)
                 except TransactionRollbackError:
                     # Ha, here we have to look like we are the ZODB raising conflict errrors, raising ZPublisher.Publish.Retry just doesn't work
-                    logging.debug("Serialization Error, retrying transaction", exc_info=True)
+                    logger.info("Serialization Error, retrying transaction", exc_info=True)
                     raise ConflictError("TransactionRollbackError from psycopg2")
                 except psycopg2.OperationalError:
-                    logging.exception("Operational error on connection, closing it.")
+                    logger.exception("Operational error on connection, closing it.")
                     try:
                         # Only close our connection
                         self.putconn(True)
                     except:
-                        logging.debug("Something went wrong when we tried to close the pool", exc_info=True)
+                        logger.info("Something went wrong when we tried to close the pool", exc_info=True)
                         pass
                 if c.description is not None:
                     nselects += 1
